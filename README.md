@@ -1,22 +1,37 @@
-# A lab: MySQL, and phpMyAdmin in front of it
+# MySQL and phpMyAdmin with Docker Compose: a lab for teaching SQL
 
-Each student gets their own [MySQL](https://dev.mysql.com/doc/refman/8.4/en/) and their
-own [phpMyAdmin](https://www.phpmyadmin.net), already signed in to it, so the same tables
-can be changed from a terminal and looked at in a browser. The terminal beside them has
-MariaDB's `mariadb` client and `curl`.
+[![check](https://github.com/mitsurutech/lab-mysql-phpmyadmin/actions/workflows/check.yml/badge.svg)](https://github.com/mitsurutech/lab-mysql-phpmyadmin/actions/workflows/check.yml)
 
-On your own machine, add `ports: ["8080:8080"]` to `phpmyadmin`, run `docker compose up`
-and open <http://localhost:8080>. On the platform nothing is published on the machine and
-the lab's page gives the link instead.
+A ready-made **MySQL + phpMyAdmin** lab for classrooms, from the
+[MitsuruTech Learning Platform](https://mitsurutech.co.uk/learning), where schools and
+colleges give every student their own databases, containers and terminal in the browser.
+Each student gets their own [MySQL](https://dev.mysql.com/doc/refman/8.4/en/) server and
+their own [phpMyAdmin](https://www.phpmyadmin.net), already signed in, so the same tables
+can be changed with SQL in a terminal and looked at in a browser. The terminal beside them
+has MariaDB's `mariadb` client and `curl`.
+
+It is one `docker-compose` file, `compose.yaml`, and it runs the same on your own machine:
+add `ports: ["8080:8080"]` to `phpmyadmin`, run `docker compose up` and open
+<http://localhost:8080>. On the platform nothing is published on the machine and the lab's
+page gives the link instead.
 
 ## Using it on the platform
 
 Make a task of type **Lab**, choose **In a GitHub repository** and give
 `https://github.com/mitsurutech/lab-mysql-phpmyadmin` with the branch `main`; the compose
 file is the default, `compose.yaml`. Fork it first to change it. Publish, and every
-student's copy starts from the commit you published.
+student's copy starts from the commit you published. The help manual's
+[guide to container labs](https://mitsurutech.co.uk/help/labs) covers the rest: what a
+compose file may say, how much memory a copy gets, and how teachers watch and take over a
+student's terminal.
+
+No college account yet? [Your first year is free](https://mitsurutech.co.uk/pricing) for up
+to 50 students, and [signing up](https://mitsurutech.co.uk/signup) takes an email address.
 
 ## The lesson it was written for
+
+Students who have not used a shell before can start with the
+[Linux terminal guide](https://mitsurutech.co.uk/help/linux-terminal).
 
 1. **Open phpMyAdmin.** On the lab's page, under **In your browser**, press
    **phpMyAdmin**. It opens signed in, on the database `shop`, which is empty.
@@ -106,6 +121,20 @@ the saved volume, and removes the containers and starts them again to see the ta
 ```
 test/check.sh
 ```
+
+## More labs
+
+- [lab-sample](https://github.com/mitsurutech/lab-sample): Postgres, with PostgREST turning
+  its tables into a web API.
+
+## About
+
+Made by [Mitsuru Technologies](https://mitsurutech.co.uk) for the
+[MitsuruTech Learning Platform](https://mitsurutech.co.uk/learning): Python, Java, Go,
+Node, SQL and Linux in the browser for schools and colleges, with container labs, web apps
+deployed from GitHub, AWS's S3, DynamoDB and SQS with no AWS account, and quizzes that mark
+themselves. Try code with no account in the
+[playground](https://mitsurutech.co.uk/playground).
 
 ## Licence
 
