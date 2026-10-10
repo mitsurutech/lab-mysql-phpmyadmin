@@ -60,9 +60,10 @@ Students who have not used a shell before can start with the
    phpMyAdmin and `SELECT * FROM fruit;` shows it in the terminal: the two are clients of
    one server.
 
-3. **See who you are.** phpMyAdmin signs in as `student`, who owns `shop` and nothing else.
-   Try `CREATE DATABASE other;` and it is refused. Sign in as `root` (password `root`) and
-   it is not:
+3. **See who you are.** phpMyAdmin signs in as `student`, who owns `shop` and any database
+   whose name starts `student_`, and nothing else. `CREATE DATABASE student_notes;` works,
+   in the terminal or under phpMyAdmin's **Databases**; `CREATE DATABASE other;` is refused.
+   `SHOW GRANTS;` says why. Sign in as `root` (password `root`) and nothing is refused:
 
    ```
    mariadb -h db -u root -proot -e 'SHOW DATABASES'
@@ -88,7 +89,7 @@ Students who have not used a shell before can start with the
 | In `compose.yaml` | Why it is there |
 | --- | --- |
 | `volumes: mysqldata` | the only part of `db` that lasts |
-| `command` on `db` | MySQL sized for a lab, see below |
+| `entrypoint` on `db` | lets `student` make databases named `student_…`, then starts MySQL sized for a lab, see below |
 | `healthcheck` on `db` | so phpMyAdmin starts once MySQL answers, not merely once it has started |
 | `depends_on: condition: service_healthy` | the other half of that |
 | `PMA_HOST`, `PMA_USER`, `PMA_PASSWORD` | which server phpMyAdmin talks to, and who it signs in as, so there is no login form |

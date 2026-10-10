@@ -14,18 +14,30 @@ services:
       MYSQL_DATABASE: shop
       MYSQL_USER: student
       MYSQL_PASSWORD: student
-    command:
-      # A lab's volumes are saved only while they total under 200 MB, and MySQL's defaults
-      # (a 100 MB redo log among them) would use most of that before any data went in.
-      - --innodb-redo-log-capacity=8M
-      - --innodb-buffer-pool-size=64M
-      - --performance-schema=OFF
-      # Nothing replicates from a lab, and a binary log grows with every write.
-      - --disable-log-bin
-      # The terminal's client is MariaDB's, which has no plugin for MySQL 8.4's default
-      # sign-in method, caching_sha2_password. This is the older one, still over TLS.
-      - --mysql-native-password=ON
-      - --authentication-policy=mysql_native_password
+    # The image makes `student` the owner of `shop` and nothing else, which phpMyAdmin
+    # reports as "No privileges to create databases". The first lines add every database
+    # named student_<anything>, written where the image runs SQL the first time it starts;
+    # the last hands over to the image's own entrypoint. A file of its own would need a
+    # bind mount, which a lab may not have.
+    entrypoint:
+      - sh
+      - -c
+      - |
+        cat > /docker-entrypoint-initdb.d/student.sql <<'SQL'
+        GRANT ALL PRIVILEGES ON `student\_%`.* TO 'student'@'%';
+        SQL
+        exec docker-entrypoint.sh mysqld \
+          --innodb-redo-log-capacity=8M \
+          --innodb-buffer-pool-size=64M \
+          --performance-schema=OFF \
+          --disable-log-bin \
+          --mysql-native-password=ON \
+          --authentication-policy=mysql_native_password
+    # Why those flags: a lab's volumes are saved only while they total under 200 MB, and
+    # MySQL's defaults (a 100 MB redo log among them) would use most of that before any
+    # data went in; nothing replicates from a lab, and a binary log grows with every write;
+    # and the terminal's client is MariaDB's, which has no plugin for MySQL 8.4's default
+    # sign-in method, caching_sha2_password, so the older one is on, still over TLS.
     volumes:
       - mysqldata:/var/lib/mysql
     healthcheck:

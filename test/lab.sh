@@ -13,9 +13,10 @@ probe mariadb -h db -u student -pstudent shop -N -e "SELECT COUNT(*) FROM fruit"
 probe mariadb -h db -u student -pstudent -N -e "SHOW STATUS LIKE 'Ssl_cipher'" | grep -q 'TLS\|AES\|CHACHA' \
   || { echo "the terminal's connection is not encrypted" >&2; exit 1; }
 
-echo "- the student owns shop and nothing else; root may do more"
+echo "- the student owns shop and student_*, and nothing else; root may do more"
+probe mariadb -h db -u student -pstudent -e "CREATE DATABASE student_mine; CREATE TABLE student_mine.t (id INT); DROP DATABASE student_mine"
 if probe mariadb -h db -u student -pstudent -e "CREATE DATABASE other" 2>/dev/null; then
-  echo "student could create a database" >&2; exit 1; fi
+  echo "student could create a database outside student_*" >&2; exit 1; fi
 probe mariadb -h db -u root -proot -N -e "SHOW DATABASES" | grep -qx shop
 
 echo "- a backup restores"
@@ -27,6 +28,12 @@ probe mariadb -h db -u student -pstudent shop -N -e "SELECT COUNT(*) FROM fruit"
 echo "- phpMyAdmin opens already signed in"
 page=$(probe curl -fsS -c /tmp/j -b /tmp/j http://phpmyadmin:8080/)
 if grep -q 'name="pma_username"' <<<"$page"; then echo "phpMyAdmin showed a login form" >&2; exit 1; fi
+
+echo "- and offers to create a database"
+probe bash -c 'curl -fsS -c /tmp/j -b /tmp/j http://phpmyadmin:8080/ >/dev/null
+  curl -fsS -c /tmp/j -b /tmp/j "http://phpmyadmin:8080/index.php?route=/server/databases"' > /tmp/pma-dbs.html
+if grep -q 'No privileges' /tmp/pma-dbs.html; then echo "phpMyAdmin says No privileges" >&2; exit 1; fi
+grep -q 'name="new_db"' /tmp/pma-dbs.html || { echo "phpMyAdmin has no Create database form" >&2; exit 1; }
 
 echo "- and shows the table written from the terminal"
 probe bash -c 'curl -fsS -c /tmp/j -b /tmp/j http://phpmyadmin:8080/ >/dev/null
