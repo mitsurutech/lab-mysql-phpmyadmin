@@ -181,6 +181,8 @@ test/check.sh
 
 ## More labs
 
+- [lab-git-gitea](https://github.com/mitsurutech/lab-git-gitea): Git and Gitea, to clone,
+  commit and push to a Git server of your own and see it in the web interface.
 - [lab-sample](https://github.com/mitsurutech/lab-sample): Postgres, with PostgREST turning
   its tables into a web API.
 
