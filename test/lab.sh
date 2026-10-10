@@ -6,6 +6,36 @@ set -euo pipefail
 probe() { docker run --rm --network "$NET" lab-check-probe \
   sh -c 'printf "[client]\nssl-verify-server-cert=0\n" > ~/.my.cnf; exec "$@"' sh "$@"; }
 
+echo "- the shop database is there, every table filled"
+counts=$(probe mariadb -h db -u student -pstudent shop -N -e "
+  SELECT 'categories', COUNT(*) FROM categories UNION ALL SELECT 'suppliers', COUNT(*) FROM suppliers
+  UNION ALL SELECT 'products', COUNT(*) FROM products UNION ALL SELECT 'employees', COUNT(*) FROM employees
+  UNION ALL SELECT 'customers', COUNT(*) FROM customers UNION ALL SELECT 'orders', COUNT(*) FROM orders
+  UNION ALL SELECT 'order_items', COUNT(*) FROM order_items UNION ALL SELECT 'reviews', COUNT(*) FROM reviews")
+echo "$counts" | sed 's/^/  /'
+diff <(echo "$counts" | tr '\t' ' ') - <<'COUNTS' || { echo "the shop database is not what seed/make.py writes" >&2; exit 1; }
+categories 8
+suppliers 6
+products 37
+employees 10
+customers 40
+orders 120
+order_items 250
+reviews 46
+COUNTS
+
+echo "- with the gaps the README's lessons find"
+# Four customers who never ordered (LEFT JOIN), two products with no category (NULL),
+# and one employee with no manager (the self-join's top).
+probe mariadb -h db -u student -pstudent shop -N -e "
+  SELECT COUNT(*) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.id IS NULL" | grep -qx 4 \
+  || { echo "expected four customers with no orders" >&2; exit 1; }
+probe mariadb -h db -u student -pstudent shop -N -e "SELECT COUNT(*) FROM products WHERE category_id IS NULL" | grep -qx 2 \
+  || { echo "expected two products with no category" >&2; exit 1; }
+probe mariadb -h db -u student -pstudent shop -N -e "
+  SELECT e.first_name FROM employees e LEFT JOIN employees m ON m.id = e.manager_id WHERE m.id IS NULL" | grep -qx Margaret \
+  || { echo "expected Margaret alone at the top" >&2; exit 1; }
+
 echo "- the terminal's client signs in and writes a table"
 probe mariadb -h db -u student -pstudent shop -e \
   "CREATE TABLE fruit (id INT PRIMARY KEY, name VARCHAR(40)); INSERT INTO fruit VALUES (1,'apple'),(2,'pear');"
@@ -38,7 +68,10 @@ grep -q 'name="new_db"' /tmp/pma-dbs.html || { echo "phpMyAdmin has no Create da
 echo "- and shows the table written from the terminal"
 probe bash -c 'curl -fsS -c /tmp/j -b /tmp/j http://phpmyadmin:8080/ >/dev/null
   curl -fsS -c /tmp/j -b /tmp/j "http://phpmyadmin:8080/index.php?route=/database/structure&db=shop"' \
-  | grep -q 'fruit' || { echo "phpMyAdmin did not list shop.fruit" >&2; exit 1; }
+  > /tmp/pma-shop.html
+for table in fruit customers orders order_items products reviews; do
+  grep -q "$table" /tmp/pma-shop.html || { echo "phpMyAdmin did not list shop.$table" >&2; exit 1; }
+done
 
 echo "- what is saved fits under the platform's 200 MB"
 size=$(docker run --rm -v "${PROJECT}_mysqldata:/v:ro" alpine:3.21 du -sm /v | cut -f1)
